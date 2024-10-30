@@ -11,6 +11,7 @@ class MqttSpbEntity(SpbEntity):
                  spb_domain_name,
                  spb_eon_name,
                  spb_eon_device_name=None,
+                 spb_host_app_name=None,
                  retain_birth=False,
                  debug_enabled=False,
                  debug_id="MQTT_SPB_ENTITY",
@@ -20,6 +21,7 @@ class MqttSpbEntity(SpbEntity):
         super().__init__(spb_domain_name=spb_domain_name,
                          spb_eon_name=spb_eon_name,
                          spb_eon_device_name=spb_eon_device_name,
+                         spb_host_app_name=spb_host_app_name,
                          debug_enabled=debug_enabled,
                          debug_id=debug_id
                          )
@@ -46,9 +48,7 @@ class MqttSpbEntity(SpbEntity):
 
         # If it is a type entity SCADA, change the BIRTH certificate
         if self._entity_is_scada:
-            topic = "%s/%s/STATE/%s" % (self._spb_namespace,
-                                        self._spb_domain_name,
-                                        self._spb_eon_name)
+            topic = "%s/STATE/%s" % (self._spb_namespace, self._spb_eon_name)
             self._loopback_topic = topic
             # Send payload to the MQTT broker
             self._mqtt_payload_publish(topic, "ONLINE".encode("utf-8"), qos, True)
@@ -203,9 +203,7 @@ class MqttSpbEntity(SpbEntity):
         # Entity DEATH message - last will message
         if not skip_death:
             if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-                topic = "%s/%s/STATE/%s" % (self._spb_namespace,
-                                               self._spb_domain_name,
-                                               self._spb_eon_name)
+                topic = "%s/STATE/%s" % (self._spb_namespace, self._spb_eon_name)
                 self._mqtt_payload_set_last_will(topic, "OFFLINE".encode("utf-8"))  # Set message
 
             else:  # Normal node
@@ -251,9 +249,7 @@ class MqttSpbEntity(SpbEntity):
             # If you do a graceful disconnect, the last will is not published automatically by the MQTT Broker.
             if not skip_death_publish:
                 if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-                    topic = "%s/%s/STATE/%s" % (self._spb_namespace,
-                                                self._spb_domain_name,
-                                                self._spb_eon_name)
+                    topic = "%s/STATE/%s" % (self._spb_namespace, self._spb_eon_name)
                     self._mqtt_payload_publish(topic, "OFFLINE".encode("utf-8"))
 
                 else:  # Normal node
@@ -330,9 +326,12 @@ class MqttSpbEntity(SpbEntity):
             client.subscribe(topic)
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
-            # Subscribe to STATE of SCADA application
-            topic = "%s/%s/STATE/+" % (self._spb_namespace,
-                                       self._spb_domain_name)
+            if self._spb_host_app_name:
+                # Subscribe to STATE of the SCADA/Primary Host application
+                topic = f"{self._spb_namespace}/STATE/{self._spb_host_app_name}"
+            else:
+                # Subscribe to STATE of any SCADA/Primary Host application
+                topic = f"{self._spb_namespace}/STATE/+"
             client.subscribe(topic)
 
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
@@ -364,18 +363,18 @@ class MqttSpbEntity(SpbEntity):
         # Parse the topic namespace ------------------------------------------------
         topic = SpbTopic(msg.topic)  # Parse and get the topic object
 
-        # Check that the namespace and group are correct
-        # NOTE: Should not be because we are subscribed to a specific topic, but good to check.
-        if topic.namespace != self._spb_namespace or topic.domain_name != self._spb_domain_name:
-            self._logger.warning( "%s - Incorrect MQTT %s namespace or domain. Message ignored !" %
-                                  ( self._spb_namespace, self._entity_domain))
-            return
-
         # Check if it is a STATE message from the SCADA application
         if topic.message_type == "STATE":
             # Execute the callback function if it is not None
             if self.on_message is not None:
                 self.on_message(topic, msg.payload.decode("utf-8"))
+            return
+
+        # Check that the namespace and group are correct
+        # NOTE: Should not be because we are subscribed to a specific topic, but good to check.
+        if topic.namespace != self._spb_namespace or topic.domain_name != self._spb_domain_name:
+            self._logger.warning( "%s - Incorrect MQTT %s namespace or domain. Message ignored !" %
+                                  ( self._spb_namespace, self._entity_domain))
             return
 
         # Parse the received ProtoBUF data ------------------------------------------------

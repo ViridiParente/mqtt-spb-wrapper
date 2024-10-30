@@ -29,7 +29,7 @@ class TestSpbPayloadParser(unittest.TestCase):
     def test_parse_complex_payload(self):
         """Test parsing a complex payload with various data types."""
         # Example payload data provided by the user
-        payload_bytes = bytearray(b'\x08\xe2\xfc\xf0\xdb\xaa2\x12\x12\n\x05value\x18\xe2\xfc\xf0\xdb\xaa2 \x04X\x00\x12\x13\n\x06uint16\x18\xe2\xfc\xf0\xdb\xaa2 \x06P}\x12\x17\n\x05bytes\x18\xe2\xfc\xf0\xdb\xaa2 \x11\x82\x01\x04\x01\x02\x03\x04\x12\x1a\n\x08datetime\x18\xe2\xfc\xf0\xdb\xaa2 \rX\xe2\xfc\xf0\xdb\xaa2\x12=\n\x04file\x18\xe2\xfc\xf0\xdb\xaa2 \x12\x82\x01+paho_mqtt==1.6.1\npandas==1.4.1\nPyYAML==6.0\n\x125\n\x04uuid\x18\xe2\xfc\xf0\xdb\xaa2 \x0fz$1d258807-9723-4480-99a4-f3bcae00e169\x18\x00')
+        payload_bytes = bytearray(b'\x08\xe2\xfc\xf0\xdb\xaa2\x12\x12\n\x05value\x18\xe2\xfc\xf0\xdb\xaa2 \x04X\x00\x12\x13\n\x06uint16\x18\xe2\xfc\xf0\xdb\xaa2 \x06P}\x12\x17\n\x05bytes\x18\xe2\xfc\xf0\xdb\xaa2 \x11\x82\x01\x04\x01\x02\x03\x04\x12\x1a\n\x08datetime\x18\xe2\xfc\xf0\xdb\xaa2 \rX\xe2\xfc\xf0\xdb\xaa2\x12=\n\x04file\x18\xe2\xfc\xf0\xdb\xaa2 \x12\x82\x01+paho_mqtt==1.6.1\nPyYAML==6.0\n\x125\n\x04uuid\x18\xe2\xfc\xf0\xdb\xaa2 \x0fz$1d258807-9723-4480-99a4-f3bcae00e169\x18\x00')
 
         parser = SpbPayloadParser(payload_bytes)
         self.assertIsNotNone(parser.payload)
@@ -70,7 +70,7 @@ class TestSpbPayloadParser(unittest.TestCase):
             },
             {
                 'name': 'file',
-                'value': b'paho_mqtt==1.6.1\npandas==1.4.1\nPyYAML==6.0\n',
+                'value': b'paho_mqtt==1.6.1\nPyYAML==6.0\n',
                 'timestamp': 1729453899362,
                 'is_updated': False,
                 'is_list_values': False,

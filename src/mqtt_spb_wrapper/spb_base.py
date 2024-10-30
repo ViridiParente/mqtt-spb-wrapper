@@ -464,6 +464,7 @@ class SpbEntity:
         spb_domain_name (str): spB Domain name
         spb_eon_name (str): spB Edge of Network (EoN) node name
         spb_eon_device_name (str, optional): spB Edge of Network Devide (EoND) node name. If set to None, the entity is of an EoN type.
+        spb_host_app_name (str, optional): spB Primary Host(AKA SCADA) Application name. If set to None, will listen to any STATE messages.
         debug_enabled ( bool, optional): Enable console debug messages
         debug_id ( str, optional ): Console debug identification for the class messages.
     """
@@ -473,6 +474,7 @@ class SpbEntity:
             spb_domain_name: str,
             spb_eon_name: str,
             spb_eon_device_name: str = None,
+            spb_host_app_name: str = None,
             debug_enabled: bool = False,
             debug_id: str = "SPB_ENTITY",
     ):
@@ -482,13 +484,14 @@ class SpbEntity:
 
         # Group of Metrics
         self.attributes = MetricGroup(birth_prefix="ATTR")
-        self.data = MetricGroup(birth_prefix="DATA")
+        self.data = MetricGroup(birth_prefix="")
         self.commands = MetricGroup(birth_prefix="CMD")
 
         # Private members -----------
         self._spb_domain_name = spb_domain_name
         self._spb_eon_name = spb_eon_name
         self._spb_eon_device_name = spb_eon_device_name
+        self._spb_host_app_name = spb_host_app_name
 
         if spb_eon_device_name is None:
             self._entity_domain = "spBv1.%s.%s" % (self._spb_domain_name, self._spb_eon_name)
@@ -796,7 +799,7 @@ class SpbEntity:
                 # Add metric to payload
                 self._serialize_payload_metric(
                     payload=payload,
-                    name=self.data.birth_prefix + "/" + item.name,
+                    name=item.name,
                     metric_value=item
                 )
 
@@ -847,11 +850,8 @@ class SpbEntity:
                         skip_callback=True,  # Dont trigger value update callback on birth data.
                     )
 
-                elif field['name'].startswith(self.data.birth_prefix):
-
-                    # remove the prefix
-                    field['name'] = field['name'].replace(self.data.birth_prefix + "/", '')
-
+                else:
+                    # If no prefix is found then it must be DATA
                     # Insert the element in the metric group
                     self._deserialize_payload_metric(
                         value_group=self.data,
@@ -1006,28 +1006,50 @@ class SpbTopic:
             raise ValueError(f"Invalid topic string: {topic_str}")
 
         self.topic = topic_str
-
-        self.namespace = topic_fields[0]
-        self.domain_name = topic_fields[1]
-        self.message_type = topic_fields[2]
         self.eon_name = None
         self.eon_device_name = None
-
         self.entity_name = None
 
-        # If EoN
-        if len(topic_fields) > 3:
-            self.eon_name = topic_fields[3]
-            self.entity_name = self.eon_name
+        if topic_fields[1] == "STATE":
+            if len(topic_fields) > 4:
+                raise ValueError(f"Invalid STATE topic string: {topic_str}. Must be of the form 'spBv1.0/STATE/<NAME>'")
 
-        # If EoN device type
-        if len(topic_fields) > 4:
-            self.eon_device_name = topic_fields[4]
-            self.entity_name = self.eon_device_name
+            self.namespace = topic_fields[0]
+            self.message_type = topic_fields[1]
 
-        self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
-        if self.eon_device_name is not None:
-            self.domain += ".%s" % self.eon_device_name
+            # If EoN
+            if len(topic_fields) > 2:
+                self.eon_name = topic_fields[2]
+                self.entity_name = self.eon_name
+
+            # If EoN device type
+            if len(topic_fields) > 3:
+                self.eon_device_name = topic_fields[3]
+                self.entity_name = self.eon_device_name
+
+            self.domain = "%s.%s" % (self.namespace, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
+
+        else:
+
+            self.namespace = topic_fields[0]
+            self.domain_name = topic_fields[1]
+            self.message_type = topic_fields[2]
+
+            # If EoN
+            if len(topic_fields) > 3:
+                self.eon_name = topic_fields[3]
+                self.entity_name = self.eon_name
+
+            # If EoN device type
+            if len(topic_fields) > 4:
+                self.eon_device_name = topic_fields[4]
+                self.entity_name = self.eon_device_name
+
+            self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
 
         return str(self)
 

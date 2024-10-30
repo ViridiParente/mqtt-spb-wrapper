@@ -115,7 +115,7 @@ class TestMqttSpbEntity(unittest.TestCase):
         # Check that it subscribed to the correct topics
         expected_calls = [
             call('spBv1.0/Group1/NCMD/EoN1'),
-            call('spBv1.0/Group1/STATE/+'),
+            call('spBv1.0/STATE/+'),
         ]
         mock_client.subscribe.assert_has_calls(expected_calls, any_order=True)
 
@@ -213,7 +213,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
         entity.publish_birth()
         self.mock_mqtt_client.publish.assert_called_with(
-            'spBv1.0/Group1/STATE/SCADA', b'ONLINE', 0, True
+            'spBv1.0/STATE/SCADA', b'ONLINE', 0, True
         )
         self.assertTrue(entity.is_birth_published)
 
@@ -221,7 +221,7 @@ class TestMqttSpbEntity(unittest.TestCase):
         """Test handling of STATE messages."""
         entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
         mock_msg = MagicMock()
-        mock_msg.topic = 'spBv1.0/Group1/STATE/SCADA'
+        mock_msg.topic = 'spBv1.0/STATE/SCADA'
         mock_msg.payload = b'ONLINE'
 
         # Mock on_message callback
@@ -424,7 +424,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
         # Simulate on_message
         mock_msg = MagicMock()
-        mock_msg.topic = 'spBv1.0/Group1/STATE/SCADA'
+        mock_msg.topic = 'spBv1.0/STATE/SCADA'
         mock_msg.payload = b'ONLINE'
 
         entity._mqtt_on_message(None, None, mock_msg)
