@@ -7,7 +7,8 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Javier FG",
-    packages=find_packages(),
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     install_requires=[
         "paho-mqtt==1.6.1",
         "protobuf==3.20.3",
